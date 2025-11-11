@@ -1,13 +1,23 @@
 # terranote-adapter-whatsapp
 
-Adaptador fase 1 para WhatsApp Cloud API que conecta con `terranote-core`.
+Adaptador fase 1 para WhatsApp Cloud API que conecta con `terranote-core`. Expone un webhook compatible con los mensajes entrantes de Meta y reenvía interacciones normalizadas al módulo central; adicionalmente entrega al usuario el resultado de la creación de notas vía callback.
 
-## Requisitos
+## Características
+
+- Recepción de mensajes de WhatsApp (texto y ubicación) mediante Cloud API.
+- Normalización de payloads hacia `POST /api/v1/interactions` del núcleo.
+- Callback de creación de nota con firma opcional y envío de mensaje al usuario.
+- Health check (`/health`) y endpoints de verificación de webhook (`GET /webhook`).
+- Pruebas unitarias con `pytest` y `respx`.
+
+## Requisitos previos
 
 - Python 3.13+
 - [virtualenv](https://virtualenv.pypa.io/) o equivalente
+- Acceso a [WhatsApp Cloud API](https://developers.facebook.com/docs/whatsapp/cloud-api) con número registrado
+- Instancia de `terranote-core` expuesta (local o remota)
 
-## Configuración rápida
+## Instalación y ejecución
 
 ```bash
 python3 -m virtualenv .venv
@@ -16,7 +26,7 @@ pip install -e .[dev]
 uvicorn terranote_adapter_whatsapp.main:app --reload
 ```
 
-Variables de entorno relevantes (`env.example`):
+### Variables de entorno (`env.example`)
 
 | Variable | Descripción |
 | --- | --- |
@@ -27,14 +37,44 @@ Variables de entorno relevantes (`env.example`):
 | `WHATSAPP_VERIFY_TOKEN` | Token compartido para verificar el webhook de Meta. |
 | `WHATSAPP_ACCESS_TOKEN` | Token de acceso para WhatsApp Cloud API. |
 | `WHATSAPP_PHONE_NUMBER_ID` | Identificador del número asociado al bot. |
+| `WHATSAPP_API_BASE_URL` | URL base de la Cloud API (por defecto `https://graph.facebook.com/v19.0`). |
 | `NOTIFIER_SECRET_TOKEN` | Secreto opcional para validar callbacks desde el core. |
 
-## Pruebas
+> Crea un archivo `.env` a partir de `env.example` y ajusta los valores antes de iniciar el adaptador.
+
+## Endpoints expuestos
+
+| Método | Ruta | Descripción |
+| --- | --- | --- |
+| `GET` | `/health` | Verificación rápida de disponibilidad. |
+| `GET` | `/webhook` | Handshake de verificación (`hub.challenge`) requerido por Meta. |
+| `POST` | `/webhook` | Recepción de eventos entrantes (mensajes de WhatsApp). |
+| `POST` | `/callbacks/note-created` | Callback del núcleo para notificar la creación de notas. |
+
+## Flujo de integración
+
+1. Configura `terranote-core` (fase 1) y obtén la URL pública del adaptador.
+2. Registra el webhook de WhatsApp Cloud API apuntando a `https://<tu-dominio>/webhook` con el `WHATSAPP_VERIFY_TOKEN`.
+3. Al recibir mensajes, el adaptador los normaliza y llama al núcleo en `POST /api/v1/interactions`.
+4. Cuando el núcleo confirma la nota, envía una solicitud `POST /callbacks/note-created`; el adaptador formatea la respuesta y notifica al usuario en WhatsApp.
+5. Para ejecutar en local con túnel, usa herramientas como `ngrok` o `cloudflared`.
+
+Consulta `docs/whatsapp-business-setup.md` para el paso a paso de configuración en Meta Business Manager.
+
+## Pruebas y calidad
 
 ```bash
 . .venv/bin/activate
 pytest
 ```
+
+Para ejecutar con cobertura:
+
+```bash
+pytest --cov --cov-report=term-missing
+```
+
+Se recomienda añadir `ruff`, `mypy` y `pytest` como jobs en CI (ver TODO `todo-ci`).
 
 ## Estructura
 
@@ -44,9 +84,20 @@ pytest
 - `src/terranote_adapter_whatsapp/clients`: clientes HTTP hacia el núcleo y WhatsApp.
 - `src/terranote_adapter_whatsapp/schemas`: modelos Pydantic.
 - `tests`: pruebas unitarias con `pytest`.
+- `docs/whatsapp-business-setup.md`: guía para registrar el bot en Cloud API.
 
-## Próximos pasos
+## Desarrollo local
 
-- Normalizar payloads de Meta y enviarlos al núcleo.
-- Implementar envío de respuestas al usuario y manejo de callbacks.
-- Añadir documentación detallada de integración y despliegue.
+- Ejecuta `pytest` tras cada cambio relevante.
+- Usa `uvicorn ... --reload` para pruebas manuales.
+- Registra logs mediante `structlog`; configura `LOGLEVEL` para ajustar verbosidad.
+
+## Recursos adicionales
+
+- [Documentación oficial de WhatsApp Cloud API](https://developers.facebook.com/docs/whatsapp/cloud-api)
+- [Repositorio `terranote-core`](https://github.com/angoca/terranote-core) para la contraparte central.
+
+## Licencia
+
+GPL-3.0-or-later, ver `LICENSE`.
+
