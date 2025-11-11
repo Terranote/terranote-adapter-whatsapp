@@ -26,5 +26,3 @@ class InteractionRequest(BaseModel):
     user_id: str = Field(min_length=1)
     sent_at: datetime
     payload: InteractionPayload
-
-

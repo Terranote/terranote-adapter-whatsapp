@@ -26,5 +26,3 @@ class WhatsAppClient:
         async with httpx.AsyncClient(base_url=str(self._base_url), headers=self._headers) as client:
             endpoint = f"/{self._phone_number_id}/messages"
             return await client.post(endpoint, json=payload)
-
-

@@ -84,9 +84,7 @@ def test_webhook_forwards_text_message_to_core(client):
 
 @respx.mock
 def test_webhook_skips_unsupported_message_type(client):
-    route = respx.post("http://localhost:8000/api/v1/interactions").mock(
-        return_value=Response(202)
-    )
+    route = respx.post("http://localhost:8000/api/v1/interactions").mock(return_value=Response(202))
     payload = _sample_event(
         {
             "from": "573000000000",
@@ -123,4 +121,3 @@ def test_webhook_returns_502_when_core_rejects(client):
 
     assert response.status_code == 502
     assert response.json() == {"detail": "core_error"}
-

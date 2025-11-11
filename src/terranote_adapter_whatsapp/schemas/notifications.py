@@ -14,5 +14,3 @@ class NoteCreatedNotification(BaseModel):
     longitude: float
     text: str
     created_at: datetime
-
-

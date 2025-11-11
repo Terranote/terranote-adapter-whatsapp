@@ -1,6 +1,5 @@
-from datetime import datetime, timezone
-
 import json
+from datetime import datetime, timezone
 
 import respx
 from fastapi.testclient import TestClient
@@ -84,5 +83,3 @@ def test_callback_returns_502_on_whatsapp_failure(settings: Settings) -> None:
 
     assert response.status_code == 502
     assert response.json() == {"detail": "whatsapp_error"}
-
-

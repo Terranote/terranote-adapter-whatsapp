@@ -1,6 +1,8 @@
 from datetime import datetime, timezone
+from typing import Literal
 
 from ..schemas.interactions import (
+    InteractionPayload,
     InteractionPayloadLocation,
     InteractionPayloadText,
     InteractionRequest,
@@ -11,7 +13,7 @@ from ..schemas.webhook import Message
 class MessageProcessor:
     """Normalize WhatsApp messages into Terranote core interactions."""
 
-    def __init__(self, channel: str = "whatsapp") -> None:
+    def __init__(self, channel: Literal["whatsapp"] = "whatsapp") -> None:
         self._channel = channel
 
     def to_interaction(self, user_id: str, message: Message) -> InteractionRequest:
@@ -19,7 +21,7 @@ class MessageProcessor:
         sent_at = self._parse_timestamp(message.timestamp)
 
         if message.type == "text" and message.text:
-            payload = InteractionPayloadText(text=message.text.body)
+            payload: InteractionPayload = InteractionPayloadText(text=message.text.body)
         elif message.type == "location" and message.location:
             payload = InteractionPayloadLocation(
                 latitude=message.location.latitude,

@@ -37,7 +37,10 @@ async def note_created_callback(
             body=exc.response.text,
             user_id=notification.user_id,
         )
-        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail="whatsapp_error") from exc
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="whatsapp_error",
+        ) from exc
     except httpx.HTTPError as exc:
         logger.error("whatsapp_unreachable", error=str(exc), user_id=notification.user_id)
         raise HTTPException(

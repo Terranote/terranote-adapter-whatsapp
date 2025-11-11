@@ -51,5 +51,3 @@ def test_message_processor_rejects_unsupported_type():
     processor = MessageProcessor()
     with pytest.raises(ValueError):
         processor.to_interaction(user_id="user-1", message=message)
-
-

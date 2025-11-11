@@ -29,5 +29,3 @@ class TerranoteCoreClient:
                 "/api/v1/interactions",
                 json=interaction.model_dump(mode="json"),
             )
-
-

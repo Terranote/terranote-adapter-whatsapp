@@ -1,6 +1,6 @@
 import httpx
 import structlog
-from fastapi import APIRouter, Depends, HTTPException, Request, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 
 from ..clients.core import TerranoteCoreClient
 from ..schemas.webhook import WebhookEvent, WebhookVerificationResponse
@@ -87,5 +87,3 @@ async def receive_webhook(
                 )
 
     return {"status": "accepted", "processed": processed}
-
-

@@ -24,5 +24,3 @@ def client(settings: Settings) -> TestClient:
     app = create_app(settings=settings)
     app.dependency_overrides[get_settings] = lambda: settings
     return TestClient(app)
-
-

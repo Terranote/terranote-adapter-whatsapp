@@ -73,5 +73,3 @@ class WebhookVerificationResponse(BaseModel):
     """Response returned to Meta for webhook verification."""
 
     hub_challenge: str
-
-
