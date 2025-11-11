@@ -37,6 +37,25 @@ El contrato del núcleo está detallado en `terranote-core/docs/interfaces.md`.
 3. Considera exponer ambos servicios detrás de un reverse proxy (NGINX, Traefik) con TLS.
 4. Configura métricas y logs en un stack (ej. Loki + Promtail) para correlacionar trazas entre repositorios.
 
+### Entorno Docker Compose incluido
+
+El repositorio del adaptador provee `docker-compose.e2e.yml` para levantar el stack mínimo:
+
+```bash
+cp env.example .env  # completar valores reales
+docker compose -f docker-compose.e2e.yml up --build
+```
+
+Servicios expuestos:
+
+| Servicio | URL local | Propósito |
+| --- | --- | --- |
+| `terranote-core` | `http://localhost:8000` | API principal consumida por el adaptador. |
+| `adapter` | `http://localhost:8001` | Webhook para Meta y callbacks de notas. |
+| `fake-osm` | `http://localhost:8080` | API de OSM simulada para pruebas controladas. |
+
+Para exponer el adaptador a Meta ejecuta un túnel (`ngrok http 8001` o `cloudflared tunnel run`) y registra la URL en la consola de WhatsApp Cloud API junto con el verify token.
+
 ## Pruebas de integración sugeridas
 
 1. Levanta `terranote-core` con el fake de OSM (`docker/compose.prometheus.yml`).

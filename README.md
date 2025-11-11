@@ -97,6 +97,23 @@ Se recomienda añadir `ruff`, `mypy` y `pytest` como jobs en CI (ver TODO `todo-
 - [Documentación oficial de WhatsApp Cloud API](https://developers.facebook.com/docs/whatsapp/cloud-api)
 - [Repositorio `terranote-core`](https://github.com/angoca/terranote-core) para la contraparte central.
 
+## Pruebas end-to-end rápidas
+
+1. Copia `env.example` a `.env` y completa los valores reales (al menos los tokens de WhatsApp y el verify token).
+2. Desde este repositorio ejecuta:
+
+   ```bash
+   docker compose -f docker-compose.e2e.yml up --build
+   ```
+
+   Esto levanta:
+   - `terranote-core` en `http://localhost:8000`
+   - `terranote-adapter-whatsapp` en `http://localhost:8001`
+   - `fake-osm` en `http://localhost:8080` para pruebas controladas
+
+3. Abre un túnel hacia `http://localhost:8001` (`ngrok http 8001` o `cloudflared tunnel run ...`) y registra la URL resultante en la consola de Meta.
+4. Usa la guía de WhatsApp Business en `docs/whatsapp-business-setup.md` para enviar mensajes de prueba y verificar que el núcleo crea notas y envía el callback.
+
 ## Licencia
 
 GPL-3.0-or-later, ver `LICENSE`.
