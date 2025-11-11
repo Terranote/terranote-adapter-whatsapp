@@ -37,24 +37,23 @@ El contrato del núcleo está detallado en `terranote-core/docs/interfaces.md`.
 3. Considera exponer ambos servicios detrás de un reverse proxy (NGINX, Traefik) con TLS.
 4. Configura métricas y logs en un stack (ej. Loki + Promtail) para correlacionar trazas entre repositorios.
 
-### Entorno Docker Compose incluido
+### Entorno Docker Compose compartido
 
-El repositorio del adaptador provee `docker-compose.e2e.yml` para levantar el stack mínimo:
+El repositorio [`terranote-infra`](https://github.com/Terranote/terranote-infra) incluye un escenario E2E (`compose/whatsapp-e2e/docker-compose.yml`) que levanta:
 
-```bash
-cp env.example .env  # completar valores reales
-docker compose -f docker-compose.e2e.yml up --build
-```
+| Servicio         | URL local             | Propósito                                      |
+| ---------------- | --------------------- | ---------------------------------------------- |
+| `terranote-core` | `http://localhost:8000` | API principal consumida por el adaptador.      |
+| `adapter`        | `http://localhost:8001` | Webhook para Meta y callbacks de notas.        |
+| `fake-osm`       | `http://localhost:8080` | API de OSM simulada para pruebas controladas.  |
 
-Servicios expuestos:
+Pasos resumidos:
 
-| Servicio | URL local | Propósito |
-| --- | --- | --- |
-| `terranote-core` | `http://localhost:8000` | API principal consumida por el adaptador. |
-| `adapter` | `http://localhost:8001` | Webhook para Meta y callbacks de notas. |
-| `fake-osm` | `http://localhost:8080` | API de OSM simulada para pruebas controladas. |
+1. Copiar `compose/whatsapp-e2e/env.whatsapp.example` a `compose/whatsapp-e2e/env.whatsapp` y completar los tokens reales.
+2. Ejecutar `docker compose -f compose/whatsapp-e2e/docker-compose.yml --env-file compose/whatsapp-e2e/env.whatsapp up --build`.
+3. Abrir un túnel hacia `http://localhost:8001` y registrar la URL pública en la consola de WhatsApp Cloud API.
 
-Para exponer el adaptador a Meta ejecuta un túnel (`ngrok http 8001` o `cloudflared tunnel run`) y registra la URL en la consola de WhatsApp Cloud API junto con el verify token.
+Con esto el adaptador queda listo para procesar mensajes reales en conjunto con el núcleo.
 
 ## Pruebas de integración sugeridas
 
