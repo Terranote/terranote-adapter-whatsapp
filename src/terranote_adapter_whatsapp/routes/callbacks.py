@@ -62,5 +62,3 @@ def _format_notification(notification: NoteCreatedNotification) -> str:
         f"Lat: {notification.latitude}, Lon: {notification.longitude}\n\n"
         f"{notification.text}"
     )
-
-

@@ -43,5 +43,3 @@ class MessageProcessor:
         if timestamp.tzinfo is None:
             return timestamp.replace(tzinfo=timezone.utc)
         return timestamp.astimezone(timezone.utc)
-
-
