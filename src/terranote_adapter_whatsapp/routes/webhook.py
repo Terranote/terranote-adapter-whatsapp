@@ -1,9 +1,14 @@
+import httpx
+import structlog
 from fastapi import APIRouter, Depends, HTTPException, Request, Query, status
 
+from ..clients.core import TerranoteCoreClient
 from ..schemas.webhook import WebhookEvent, WebhookVerificationResponse
+from ..services.message_processor import MessageProcessor
 from ..settings import Settings, get_settings
 
 router = APIRouter(prefix="/webhook", tags=["whatsapp"])
+logger = structlog.get_logger(__name__)
 
 
 @router.get(
@@ -29,11 +34,58 @@ async def receive_webhook(
     event: WebhookEvent,
     request: Request,
     settings: Settings = Depends(get_settings),
-) -> dict[str, str]:
+) -> dict[str, int | str]:
     """Handle incoming WhatsApp events from Meta."""
-    request.app.state  # placeholder to avoid unused variable warning
-    settings  # placeholder until processing logic is implemented
-    # TODO: Implement normalization and forwarding to Terranote core.
-    return {"status": "accepted"}
+    processor = MessageProcessor()
+    core_client = TerranoteCoreClient(settings)
+
+    processed = 0
+    for entry in event.entry:
+        for change in entry.changes:
+            for message in change.value.messages:
+                try:
+                    interaction = processor.to_interaction(user_id=message.from_, message=message)
+                except ValueError as exc:
+                    logger.warning(
+                        "unsupported_message",
+                        message_type=message.type,
+                        message_id=message.id,
+                        error=str(exc),
+                    )
+                    continue
+
+                try:
+                    response = await core_client.send_interaction(interaction)
+                    response.raise_for_status()
+                except httpx.HTTPStatusError as exc:
+                    logger.error(
+                        "core_rejected_interaction",
+                        status_code=exc.response.status_code,
+                        body=exc.response.text,
+                        user_id=interaction.user_id,
+                    )
+                    raise HTTPException(
+                        status_code=status.HTTP_502_BAD_GATEWAY,
+                        detail="core_error",
+                    ) from exc
+                except httpx.HTTPError as exc:
+                    logger.error(
+                        "core_unreachable",
+                        error=str(exc),
+                        user_id=interaction.user_id,
+                    )
+                    raise HTTPException(
+                        status_code=status.HTTP_502_BAD_GATEWAY,
+                        detail="core_unreachable",
+                    ) from exc
+
+                processed += 1
+                logger.info(
+                    "interaction_forwarded",
+                    user_id=interaction.user_id,
+                    message_id=message.id,
+                )
+
+    return {"status": "accepted", "processed": processed}
 
 

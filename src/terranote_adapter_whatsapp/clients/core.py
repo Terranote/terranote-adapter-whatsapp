@@ -25,6 +25,9 @@ class TerranoteCoreClient:
             timeout=self._timeout,
             headers=self._headers,
         ) as client:
-            return await client.post("/api/v1/interactions", json=interaction.model_dump())
+            return await client.post(
+                "/api/v1/interactions",
+                json=interaction.model_dump(mode="json"),
+            )
 
 

@@ -1,7 +1,7 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Literal
 
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class MessageText(BaseModel):
@@ -27,9 +27,20 @@ class Message(BaseModel):
     from_: str = Field(alias="from")
     id: str
     timestamp: datetime
-    type: Literal["text", "location"]
+    type: str
     text: MessageText | None = None
     location: MessageLocation | None = None
+
+    @field_validator("timestamp", mode="before")
+    @classmethod
+    def parse_timestamp(cls, value: Any) -> datetime:
+        if isinstance(value, datetime):
+            return value
+        if isinstance(value, str) and value.isdigit():
+            value = int(value)
+        if isinstance(value, (int, float)):
+            return datetime.fromtimestamp(int(value), tz=timezone.utc)
+        raise ValueError("Unsupported timestamp value")
 
 
 class ChangeValue(BaseModel):
