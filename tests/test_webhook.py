@@ -58,7 +58,7 @@ def test_webhook_verification_rejects_invalid_token(client):
 
 @respx.mock
 def test_webhook_forwards_text_message_to_core(client):
-    route = respx.post("https://core.example.com/api/v1/interactions").mock(
+    route = respx.post("http://localhost:8000/api/v1/interactions").mock(
         return_value=Response(202, json={"status": "queued"})
     )
     payload = _sample_event(
@@ -84,7 +84,7 @@ def test_webhook_forwards_text_message_to_core(client):
 
 @respx.mock
 def test_webhook_skips_unsupported_message_type(client):
-    route = respx.post("https://core.example.com/api/v1/interactions").mock(
+    route = respx.post("http://localhost:8000/api/v1/interactions").mock(
         return_value=Response(202)
     )
     payload = _sample_event(
@@ -106,7 +106,7 @@ def test_webhook_skips_unsupported_message_type(client):
 
 @respx.mock
 def test_webhook_returns_502_when_core_rejects(client):
-    respx.post("https://core.example.com/api/v1/interactions").mock(
+    respx.post("http://localhost:8000/api/v1/interactions").mock(
         return_value=Response(500, json={"detail": "error"})
     )
     payload = _sample_event(
