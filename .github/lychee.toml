@@ -1,4 +1,4 @@
-pero # lychee configuration for Terranote WhatsApp adapter
+# lychee configuration for Terranote WhatsApp adapter
 
 include_mail = false
 exclude = [
