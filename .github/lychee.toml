@@ -1,0 +1,13 @@
+pero # lychee configuration for Terranote WhatsApp adapter
+
+include_mail = false
+exclude = [
+  ".*/\\.venv/.*"
+]
+accept = [
+  "200..=399",
+  "403"
+]
+
+
+

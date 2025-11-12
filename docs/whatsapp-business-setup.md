@@ -63,4 +63,6 @@ NOTIFIER_SECRET_TOKEN=<opcional>
 
 Con esto el adaptador queda listo para operar en la fase 1. Mantén la guía actualizada si Meta modifica los pasos de la consola o API.
 
+> Para referencias globales de arquitectura y operación, visita `https://github.com/Terranote/terranote-docs`.
+
 

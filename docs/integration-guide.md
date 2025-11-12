@@ -1,6 +1,6 @@
 # Guía de integración con Terranote Core
 
-Este adaptador consume la API pública de `terranote-core` (fase 1) para agrupar interacciones y recibir notificaciones de notas creadas.
+Este adaptador consume la API pública de `terranote-core` (fase 1) para agrupar interacciones y recibir notificaciones de notas creadas. Para entender la arquitectura completa y cómo se relacionan los demás repositorios, consulta la estrategia documental en `https://github.com/Terranote/terranote-docs`.
 
 ## Endpoints utilizados
 

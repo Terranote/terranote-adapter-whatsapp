@@ -95,7 +95,7 @@ Se recomienda añadir `ruff`, `mypy` y `pytest` como jobs en CI (ver TODO `todo-
 ## Recursos adicionales
 
 - [Documentación oficial de WhatsApp Cloud API](https://developers.facebook.com/docs/whatsapp/cloud-api)
-- [Repositorio `terranote-core`](https://github.com/angoca/terranote-core) para la contraparte central.
+- [Repositorio `terranote-core`](https://github.com/Terranote/terranote-core) para la contraparte central.
 
 ## Pruebas end-to-end rápidas
 
