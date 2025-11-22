@@ -7,12 +7,37 @@ Este adaptador consume la API pública de `terranote-core` (fase 1) para agrupar
 | Servicio | Método | Ruta | Descripción |
 | --- | --- | --- | --- |
 | Adaptador → Núcleo | `POST` | `/api/v1/interactions` | Envía interacciones normalizadas por usuario (`text` / `location`). |
+| Adaptador → Núcleo | `GET` | `/api/v1/channels/{channel}/help` | Obtiene información de ayuda para un canal específico (con parámetro `lang`). |
 | Núcleo → Adaptador | `POST` | `/callbacks/note-created` | Notifica que la nota fue creada y entrega la URL. |
 | Adaptador (Meta) | `GET` | `/webhook` | Handshake de verificación para Meta. |
 | Adaptador (Meta) | `POST` | `/webhook` | Recepción de eventos entrantes. |
 | Adaptador | `GET` | `/health` | Health check sencillo. |
 
 El contrato del núcleo está detallado en `terranote-core/docs/interfaces.md`.
+
+### Endpoint de Ayuda (`GET /api/v1/channels/{channel}/help`)
+
+Cuando un usuario envía `/ayuda` o `/help`, el adaptador consulta este endpoint para obtener la información de ayuda dinámica.
+
+**Parámetros:**
+- `channel`: Canal del adaptador (ej: `"whatsapp"`)
+- `lang`: Idioma solicitado (ej: `"es"`, `"en"`) - query parameter
+
+**Respuesta esperada:**
+```json
+{
+  "body": "📝 *Terranote - Comandos disponibles:*\n\n...",
+  "quick_replies": [
+    {"id": "cmd_crear", "title": "Crear nota"},
+    {"id": "cmd_info", "title": "Más info"}
+  ]
+}
+```
+
+**Notas:**
+- `body`: Texto del mensaje de ayuda (puede incluir Markdown de WhatsApp)
+- `quick_replies`: Array opcional de botones de respuesta rápida (máximo 3)
+- Si el endpoint no está disponible o falla, el adaptador usa un mensaje de ayuda local como fallback
 
 ## Requisitos del adaptador
 

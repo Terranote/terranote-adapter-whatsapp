@@ -88,11 +88,46 @@ async def receive_webhook(
                         
                         try:
                             if command in ("ayuda", "help"):
-                                help_msg = MessageTemplates.get_help_message(lang)
-                                await whatsapp_client.send_text_message_with_quick_replies(
-                                    user_id, help_msg["body"], help_msg["quick_replies"]
-                                )
-                                logger.info("help_message_sent", user_id=user_id, lang=lang)
+                                # Get help from core
+                                try:
+                                    help_response = await core_client.get_help(channel="whatsapp", lang=lang)
+                                    help_response.raise_for_status()
+                                    help_data = help_response.json()
+                                    
+                                    # Format help message from core response
+                                    help_body = help_data.get("body", help_data.get("message", ""))
+                                    quick_replies = help_data.get("quick_replies", [])
+                                    
+                                    if quick_replies:
+                                        await whatsapp_client.send_text_message_with_quick_replies(
+                                            user_id, help_body, quick_replies
+                                        )
+                                    else:
+                                        await whatsapp_client.send_text_message(user_id, help_body)
+                                    
+                                    logger.info("help_message_sent_from_core", user_id=user_id, lang=lang)
+                                except httpx.HTTPStatusError as exc:
+                                    logger.error(
+                                        "core_help_error",
+                                        status_code=exc.response.status_code,
+                                        body=exc.response.text,
+                                        user_id=user_id,
+                                    )
+                                    # Fallback to local template if core fails
+                                    help_msg = MessageTemplates.get_help_message(lang)
+                                    await whatsapp_client.send_text_message_with_quick_replies(
+                                        user_id, help_msg["body"], help_msg["quick_replies"]
+                                    )
+                                    logger.info("help_message_sent_fallback", user_id=user_id, lang=lang)
+                                except httpx.HTTPError as exc:
+                                    logger.error("core_unreachable_for_help", error=str(exc), user_id=user_id)
+                                    # Fallback to local template if core is unreachable
+                                    help_msg = MessageTemplates.get_help_message(lang)
+                                    await whatsapp_client.send_text_message_with_quick_replies(
+                                        user_id, help_msg["body"], help_msg["quick_replies"]
+                                    )
+                                    logger.info("help_message_sent_fallback", user_id=user_id, lang=lang)
+                                
                                 processed += 1
                                 continue  # Don't send to core
                             
