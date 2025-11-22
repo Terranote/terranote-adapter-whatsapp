@@ -39,15 +39,21 @@ async def receive_webhook(
     settings: Settings = Depends(get_settings),
 ) -> dict[str, int | str]:
     """Handle incoming WhatsApp events from Meta."""
+    # Log when webhook is received
+    logger.info("webhook_received", event_object=event.object, entries_count=len(event.entry))
+    
     processor = MessageProcessor()
     core_client = TerranoteCoreClient(settings)
 
     processed = 0
     for entry in event.entry:
         for change in entry.changes:
+            logger.info("processing_change", field=change.field, messages_count=len(change.value.messages))
             for message in change.value.messages:
+                logger.info("processing_message", message_id=message.id, message_type=message.type, from_user=message.from_)
                 try:
                     interaction = processor.to_interaction(user_id=message.from_, message=message)
+                    logger.info("interaction_created", user_id=interaction.user_id, channel=interaction.channel)
                 except ValueError as exc:
                     logger.warning(
                         "unsupported_message",
@@ -58,8 +64,10 @@ async def receive_webhook(
                     continue
 
                 try:
+                    logger.info("sending_to_core", user_id=interaction.user_id, core_url=str(core_client._base_url))
                     response = await core_client.send_interaction(interaction)
                     response.raise_for_status()
+                    logger.info("core_response_received", status_code=response.status_code, user_id=interaction.user_id)
                 except httpx.HTTPStatusError as exc:
                     logger.error(
                         "core_rejected_interaction",
