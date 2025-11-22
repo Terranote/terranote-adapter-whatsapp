@@ -7,95 +7,89 @@ Esta guía explica cómo configurar los **Icebreakers** (mensajes de bienvenida 
 - **Icebreakers**: Botones de inicio rápido que aparecen cuando un usuario inicia una conversación por primera vez o después de 24 horas sin interacción. Ayudan a guiar al usuario desde el inicio.
 - **Commands**: Palabras clave o frases que los usuarios pueden enviar para activar respuestas automáticas o flujos específicos.
 
-## Paso 1: Configurar Icebreakers
+## Paso 1: Implementar Mensaje de Bienvenida (Icebreaker)
 
-Los Icebreakers se configuran en **Meta Business Manager** o mediante la **Graph API**.
+**⚠️ Importante:** En WhatsApp Business API (Cloud API), **NO existe una opción de "Welcome Message" en Meta Business Manager** como en la app móvil de WhatsApp Business. 
 
-### Opción A: Configurar desde Meta Business Manager (Interfaz Web)
+En su lugar, debes **implementar la lógica en tu adaptador** para detectar cuando un usuario inicia una conversación y enviar automáticamente un mensaje de bienvenida con botones interactivos.
 
-1. **Accede a Meta Business Manager:**
-   - Ve a [https://business.facebook.com/](https://business.facebook.com/)
-   - Inicia sesión con tu cuenta
+### Solución: Implementar en el Adaptador
 
-2. **Navega a WhatsApp:**
-   - En el menú lateral, busca **"WhatsApp"** o **"WhatsApp Business"**
-   - Selecciona tu número de WhatsApp Business
+La mejor forma es detectar el primer mensaje de un usuario y responder con un mensaje de bienvenida que incluya botones interactivos (Quick Replies o Interactive Buttons).
 
-3. **Configurar Mensaje de Bienvenida:**
-   - Busca la sección **"Mensaje de bienvenida"** o **"Welcome Message"**
-   - Haz clic en **"Configurar"** o **"Editar"**
+### Opción A: Usar Quick Replies (Botones de Respuesta Rápida)
 
-4. **Agregar Botones:**
-   - Puedes agregar hasta **4 botones** de inicio rápido
-   - Para cada botón:
-     - **Texto del botón**: Lo que verá el usuario (máx. 20 caracteres)
-     - **Respuesta**: El texto que se enviará cuando el usuario haga clic (máx. 20 caracteres)
-   
-   **Ejemplo para Terranote:**
-   ```
-   Botón 1:
-   - Texto: "Crear nota"
-   - Respuesta: "/crear"
-   
-   Botón 2:
-   - Texto: "Ver ayuda"
-   - Respuesta: "/ayuda"
-   
-   Botón 3:
-   - Texto: "Ver mis notas"
-   - Respuesta: "/listar"
-   ```
+**Implementación práctica:**
 
-5. **Guardar configuración:**
-   - Haz clic en **"Guardar"** o **"Aplicar"**
-   - Los cambios pueden tardar unos minutos en aplicarse
+1. **Agregar método para enviar mensaje con botones** en `WhatsAppClient`:
 
-### Opción B: Configurar mediante Graph API
-
-Puedes configurar los Icebreakers programáticamente usando la Graph API de Meta.
-
-**Endpoint:** `POST /{phone-number-id}/whatsapp_business_profile`
-
-**Ejemplo de request:**
-
-```bash
-curl -X POST \
-  "https://graph.facebook.com/v19.0/{PHONE_NUMBER_ID}/whatsapp_business_profile" \
-  -H "Authorization: Bearer {ACCESS_TOKEN}" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "messaging_product": "whatsapp",
-    "welcome_message": {
-      "name": "welcome_message",
-      "category": "MARKETING",
-      "language": "es",
-      "components": [
-        {
-          "type": "body",
-          "parameters": [
-            {
-              "type": "text",
-              "text": "¡Hola! Bienvenido a Terranote. ¿Cómo puedo ayudarte?"
-            }
-          ]
+```python
+# En src/terranote_adapter_whatsapp/clients/whatsapp.py
+async def send_welcome_message(self, to: str) -> httpx.Response:
+    """Send welcome message with quick reply buttons."""
+    payload = {
+        "messaging_product": "whatsapp",
+        "to": to,
+        "type": "text",
+        "text": {
+            "body": "¡Hola! 👋 Bienvenido a Terranote.\n\nPuedes crear notas enviándome un mensaje de texto y luego tu ubicación.\n\n¿Cómo puedo ayudarte?"
         },
-        {
-          "type": "button",
-          "sub_type": "quick_reply",
-          "index": 0,
-          "parameters": [
+        "quick_replies": [
             {
-              "type": "payload",
-              "payload": "/crear"
+                "type": "reply",
+                "reply": {
+                    "id": "cmd_crear",
+                    "title": "Crear nota"
+                }
+            },
+            {
+                "type": "reply",
+                "reply": {
+                    "id": "cmd_ayuda",
+                    "title": "Ver ayuda"
+                }
+            },
+            {
+                "type": "reply",
+                "reply": {
+                    "id": "cmd_info",
+                    "title": "Más info"
+                }
             }
-          ]
-        }
-      ]
+        ]
     }
-  }'
+    
+    async with httpx.AsyncClient(base_url=str(self._base_url), headers=self._headers) as client:
+        endpoint = f"/{self._phone_number_id}/messages"
+        return await client.post(endpoint, json=payload)
 ```
 
-**Nota:** La configuración de Icebreakers mediante API puede ser compleja. Se recomienda usar la interfaz web de Meta Business Manager para la primera configuración.
+2. **Detectar primer mensaje y enviar bienvenida** en el webhook:
+
+```python
+# En src/terranote_adapter_whatsapp/routes/webhook.py
+# Agregar al inicio del archivo (necesitarás una forma de trackear usuarios nuevos)
+# Opción simple: usar un set en memoria (para producción, usa Redis o base de datos)
+
+_seen_users: set[str] = set()  # En producción, usa Redis o DB
+
+# Dentro de receive_webhook, antes de procesar el mensaje:
+user_id = message.from_
+
+# Verificar si es un usuario nuevo
+if user_id not in _seen_users:
+    _seen_users.add(user_id)
+    # Enviar mensaje de bienvenida
+    whatsapp_client = WhatsAppClient(settings)
+    try:
+        await whatsapp_client.send_welcome_message(user_id)
+        logger.info("welcome_message_sent", user_id=user_id)
+    except Exception as exc:
+        logger.error("failed_to_send_welcome", user_id=user_id, error=str(exc))
+    # Continuar procesando el mensaje normalmente
+```
+
+**Nota:** Esta implementación básica usa un set en memoria. Para producción, considera usar Redis o una base de datos para trackear usuarios de forma persistente.
 
 ## Paso 2: Configurar Commands (Comandos Rápidos)
 
@@ -237,10 +231,11 @@ Basándote en la funcionalidad de Terranote, estos son comandos útiles:
 
 ## Próximos Pasos
 
-1. ✅ Configurar Icebreakers en Meta Business Manager
-2. ✅ Implementar procesamiento de comandos en el adaptador
-3. ✅ Probar ambos flujos con mensajes reales
-4. ✅ Documentar los comandos disponibles para los usuarios
+1. ✅ Implementar mensaje de bienvenida en el adaptador (detectar primer mensaje)
+2. ✅ Agregar método `send_welcome_message` con Quick Replies en `WhatsAppClient`
+3. ✅ Implementar procesamiento de comandos en el adaptador
+4. ✅ Probar ambos flujos con mensajes reales
+5. ✅ Documentar los comandos disponibles para los usuarios
 
 ## Referencias
 
