@@ -38,6 +38,27 @@ class MessageProcessor:
         )
 
     @staticmethod
+    def is_command(text: str) -> bool:
+        """Check if message is a command (starts with / or is a quick reply button)."""
+        if not text:
+            return False
+        text_stripped = text.strip()
+        return text_stripped.startswith("/") or text_stripped.startswith("cmd_")
+
+    @staticmethod
+    def get_command(text: str) -> str | None:
+        """Extract command from text."""
+        if not MessageProcessor.is_command(text):
+            return None
+        text_stripped = text.strip()
+        # Remove leading / or cmd_
+        if text_stripped.startswith("/"):
+            return text_stripped[1:].lower()
+        if text_stripped.startswith("cmd_"):
+            return text_stripped[4:].lower()
+        return text_stripped.lower()
+
+    @staticmethod
     def _parse_timestamp(timestamp: datetime) -> datetime:
         """Ensure timestamps are timezone-aware in UTC."""
         if timestamp.tzinfo is None:

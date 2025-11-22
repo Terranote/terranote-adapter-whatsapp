@@ -3,12 +3,17 @@ import structlog
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response, status
 
 from ..clients.core import TerranoteCoreClient
+from ..clients.whatsapp import WhatsAppClient
 from ..schemas.webhook import WebhookEvent, WebhookVerificationResponse
 from ..services.message_processor import MessageProcessor
+from ..services.messages import MessageTemplates
 from ..settings import Settings, get_settings
 
 router = APIRouter(prefix="/webhook", tags=["whatsapp"])
 logger = structlog.get_logger(__name__)
+
+# Track seen users (in production, use Redis or database)
+_seen_users: set[str] = set()
 
 
 @router.get(
@@ -44,15 +49,71 @@ async def receive_webhook(
     
     processor = MessageProcessor()
     core_client = TerranoteCoreClient(settings)
+    whatsapp_client = WhatsAppClient(settings)
 
     processed = 0
     for entry in event.entry:
         for change in entry.changes:
             logger.info("processing_change", field=change.field, messages_count=len(change.value.messages))
             for message in change.value.messages:
-                logger.info("processing_message", message_id=message.id, message_type=message.type, from_user=message.from_)
+                user_id = message.from_
+                logger.info("processing_message", message_id=message.id, message_type=message.type, from_user=user_id)
+
+                # Check if user is new and send welcome message
+                if user_id not in _seen_users:
+                    _seen_users.add(user_id)
+                    # Detect language from message if available
+                    lang = "es"  # Default to Spanish
+                    if message.type == "text" and message.text:
+                        lang = MessageTemplates.detect_language(message.text.body)
+                    
+                    # Send welcome message
+                    try:
+                        welcome_msg = MessageTemplates.get_welcome_message(lang)
+                        await whatsapp_client.send_text_message_with_quick_replies(
+                            user_id, welcome_msg["body"], welcome_msg["quick_replies"]
+                        )
+                        logger.info("welcome_message_sent", user_id=user_id, lang=lang)
+                    except Exception as exc:
+                        logger.error("failed_to_send_welcome", user_id=user_id, error=str(exc))
+
+                # Check if message is a command
+                if message.type == "text" and message.text:
+                    text = message.text.body
+                    command = processor.get_command(text)
+                    
+                    if command:
+                        # Detect language for command response
+                        lang = MessageTemplates.detect_language(text)
+                        
+                        try:
+                            if command in ("ayuda", "help"):
+                                help_msg = MessageTemplates.get_help_message(lang)
+                                await whatsapp_client.send_text_message_with_quick_replies(
+                                    user_id, help_msg["body"], help_msg["quick_replies"]
+                                )
+                                logger.info("help_message_sent", user_id=user_id, lang=lang)
+                                processed += 1
+                                continue  # Don't send to core
+                            
+                            elif command in ("info", "informacion", "information"):
+                                info_msg = MessageTemplates.get_info_message(lang)
+                                await whatsapp_client.send_text_message(user_id, info_msg["body"])
+                                logger.info("info_message_sent", user_id=user_id, lang=lang)
+                                processed += 1
+                                continue  # Don't send to core
+                            
+                            # Other commands can be handled here
+                            else:
+                                logger.info("unknown_command", user_id=user_id, command=command)
+                                # Continue processing as normal message
+                        except Exception as exc:
+                            logger.error("failed_to_send_command_response", user_id=user_id, command=command, error=str(exc))
+                            # Continue processing as normal message
+
+                # Process normal message (text or location)
                 try:
-                    interaction = processor.to_interaction(user_id=message.from_, message=message)
+                    interaction = processor.to_interaction(user_id=user_id, message=message)
                     logger.info("interaction_created", user_id=interaction.user_id, channel=interaction.channel)
                 except ValueError as exc:
                     logger.warning(
