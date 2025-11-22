@@ -40,7 +40,7 @@ def test_webhook_verification_accepts_valid_token(client):
     )
 
     assert response.status_code == 200
-    assert response.json() == {"hub_challenge": "12345"}
+    assert response.text == "12345"  # Facebook expects plain text, not JSON
 
 
 def test_webhook_verification_rejects_invalid_token(client):

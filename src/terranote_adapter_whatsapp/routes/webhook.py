@@ -1,6 +1,6 @@
 import httpx
 import structlog
-from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response, status
 
 from ..clients.core import TerranoteCoreClient
 from ..schemas.webhook import WebhookEvent, WebhookVerificationResponse
@@ -13,7 +13,6 @@ logger = structlog.get_logger(__name__)
 
 @router.get(
     "",
-    response_model=WebhookVerificationResponse,
     summary="WhatsApp webhook verification handshake",
 )
 async def verify_webhook(
@@ -21,12 +20,16 @@ async def verify_webhook(
     hub_challenge: str = Query(alias="hub.challenge"),
     hub_verify_token: str = Query(alias="hub.verify_token"),
     settings: Settings = Depends(get_settings),
-) -> WebhookVerificationResponse:
-    """Respond to the Facebook webhook verification challenge."""
+) -> Response:
+    """Respond to the Facebook webhook verification challenge.
+    
+    Facebook expects the challenge to be returned as plain text, not JSON.
+    """
     if hub_mode != "subscribe" or hub_verify_token != settings.whatsapp_verify_token:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Verification failed")
 
-    return WebhookVerificationResponse(hub_challenge=hub_challenge)
+    # Facebook expects plain text response, not JSON
+    return Response(content=hub_challenge, media_type="text/plain")
 
 
 @router.post("", status_code=status.HTTP_202_ACCEPTED, summary="Process WhatsApp inbound events")
