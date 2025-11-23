@@ -55,6 +55,9 @@ async def receive_webhook(
     for entry in event.entry:
         for change in entry.changes:
             logger.info("processing_change", field=change.field, messages_count=len(change.value.messages))
+            if not change.value.messages:
+                logger.warning("no_messages_in_change", field=change.field)
+                continue
             for message in change.value.messages:
                 user_id = message.from_
                 logger.info("processing_message", message_id=message.id, message_type=message.type, from_user=user_id)
