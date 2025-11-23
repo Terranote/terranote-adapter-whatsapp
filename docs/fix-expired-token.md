@@ -15,13 +15,18 @@ Esto causa que:
 
 ## Solución
 
-### 1. Generar Nuevo Token en Meta Business Suite
+### 1. Generar Nuevo Token en Meta for Developers (WhatsApp Cloud API)
 
-1. Ve a [Meta Business Suite](https://business.facebook.com/)
-2. Navega a **WhatsApp** → **Tu número** → **API Setup**
-3. Busca la sección **"Temporary access token"** o **"Access tokens"**
-4. Haz clic en **"Generate new token"** o **"Renew token"**
+1. Ve a [Meta for Developers](https://developers.facebook.com/)
+2. Selecciona tu **App** (la que creaste para WhatsApp)
+3. En el menú lateral, ve a **WhatsApp** → **API Setup**
+4. En la sección **"Temporary access token"**, haz clic en **"Generate new token"** o **"Renew token"**
 5. Copia el nuevo token (comienza con `EAA...`)
+
+**Nota:** Si no ves la opción de generar token, verifica que:
+- Tu app tenga permisos de WhatsApp configurados
+- Tu número de teléfono esté verificado en la app
+- Tengas los permisos necesarios en la app
 
 ### 2. Actualizar el Token en el Servidor
 
@@ -66,13 +71,15 @@ curl -X GET "https://graph.facebook.com/v19.0/864235020113006?access_token=TU_TO
 
 Si el token es válido, deberías recibir información del número de teléfono.
 
-## Nota sobre Tokens Permanentes
+## Nota sobre Tokens en WhatsApp Cloud API
 
 Los tokens temporales expiran después de ~60 días. Para producción, considera:
 
-1. **Usar tokens de larga duración** (si están disponibles en tu plan)
+1. **Usar tokens de larga duración** (si están disponibles en tu plan de WhatsApp Cloud API)
 2. **Implementar renovación automática** usando el API de Meta
-3. **Usar System User Access Token** (requiere configuración adicional)
+3. **Usar System User Access Token** (requiere configuración adicional en Meta for Developers)
+
+**Importante:** WhatsApp Cloud API es diferente de WhatsApp Business Suite. Los tokens se gestionan desde [Meta for Developers](https://developers.facebook.com/), no desde Business Suite.
 
 ## Confirmación: WhatsApp Cloud API
 
