@@ -97,6 +97,14 @@ Se recomienda añadir `ruff`, `mypy` y `pytest` como jobs en CI (ver TODO `todo-
 - [Documentación oficial de WhatsApp Cloud API](https://developers.facebook.com/docs/whatsapp/cloud-api)
 - [Repositorio `terranote-core`](https://github.com/Terranote/terranote-core) para la contraparte central.
 
+## ⚠️ Requisitos del Core
+
+El adaptador requiere que `terranote-core` implemente el siguiente endpoint:
+
+- **`GET /api/v1/channels/{channel}/help?lang={lang}`** - Para proporcionar información de ayuda dinámica
+
+Ver [`docs/core-help-endpoint.md`](docs/core-help-endpoint.md) para la especificación completa y [`docs/TODO-CORE-HELP-ENDPOINT.md`](docs/TODO-CORE-HELP-ENDPOINT.md) para el TODO.
+
 ## Pruebas end-to-end rápidas
 
 Consulta el repositorio [`terranote-infra`](https://github.com/Terranote/terranote-infra) para levantar el stack completo (`terranote-core`, adaptador y fake-OSM) mediante Docker Compose. Allí encontrarás:

@@ -15,6 +15,8 @@ Este adaptador consume la API pública de `terranote-core` (fase 1) para agrupar
 
 El contrato del núcleo está detallado en `terranote-core/docs/interfaces.md`.
 
+> ⚠️ **IMPORTANTE:** El adaptador requiere que el core implemente el endpoint `GET /api/v1/channels/{channel}/help`. Ver [`docs/core-help-endpoint.md`](./core-help-endpoint.md) para la especificación completa y [`docs/TODO-CORE-HELP-ENDPOINT.md`](./TODO-CORE-HELP-ENDPOINT.md) para el TODO.
+
 ### Endpoint de Ayuda (`GET /api/v1/channels/{channel}/help`)
 
 Cuando un usuario envía `/ayuda` o `/help`, el adaptador consulta este endpoint para obtener la información de ayuda dinámica.
