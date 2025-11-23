@@ -73,10 +73,20 @@ async def receive_webhook(
                     # Send welcome message
                     try:
                         welcome_msg = MessageTemplates.get_welcome_message(lang)
-                        await whatsapp_client.send_text_message_with_quick_replies(
+                        response = await whatsapp_client.send_text_message_with_quick_replies(
                             user_id, welcome_msg["body"], welcome_msg["quick_replies"]
                         )
+                        response.raise_for_status()
                         logger.info("welcome_message_sent", user_id=user_id, lang=lang)
+                    except httpx.HTTPStatusError as exc:
+                        logger.error(
+                            "welcome_message_rejected",
+                            status_code=exc.response.status_code,
+                            body=exc.response.text,
+                            user_id=user_id,
+                        )
+                    except httpx.HTTPError as exc:
+                        logger.error("welcome_message_failed", error=str(exc), user_id=user_id)
                     except Exception as exc:
                         logger.error("failed_to_send_welcome", user_id=user_id, error=str(exc))
 
